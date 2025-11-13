@@ -28,6 +28,10 @@ function hexToRgb(hex: string) {
     : { r: 236, g: 72, b: 153 }
 }
 
+// Disable static generation and enable dynamic rendering
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function SophieCarterFitness() {
   // Fetch all content and theme from Supabase
   const [content, theme] = await Promise.all([
@@ -246,6 +250,7 @@ export default async function SophieCarterFitness() {
                   src={aboutImage}
                   alt="Sophie Carter - Personal Trainer"
                   className="w-full h-full object-cover"
+                  key={aboutImage}
                 />
               </div>
               <div className="absolute -bottom-8 -right-8 bg-white rounded-3xl shadow-2xl p-8 border border-gray-100/50 backdrop-blur-sm">
