@@ -338,6 +338,8 @@ export default function AdminPage() {
 
   const saveContentField = async (section: string, field: string, value: string) => {
     try {
+      console.log('saveContentField called:', { section, field, value: value.substring(0, 50) + '...' })
+      
       // First try to update existing record
       const { data: existing, error: checkError } = await supabase
         .from('section_content')
@@ -348,35 +350,50 @@ export default function AdminPage() {
 
       if (checkError && checkError.code !== 'PGRST116') {
         // PGRST116 is "not found" error, which is expected for new records
+        console.error('Error checking existing record:', checkError)
         throw checkError
       }
 
       if (existing) {
         // Update existing record
-        const { error } = await supabase
+        console.log('Updating existing record:', existing.id)
+        const { data, error } = await supabase
           .from('section_content')
           .update({ value })
           .eq('section', section)
           .eq('field', field)
+          .select()
 
-        if (error) throw error
+        if (error) {
+          console.error('Error updating record:', error)
+          throw error
+        }
+        console.log('Successfully updated record:', data)
       } else {
         // Insert new record
-        const { error } = await supabase
+        console.log('Inserting new record')
+        const { data, error } = await supabase
           .from('section_content')
           .insert({ section, field, value })
+          .select()
 
-        if (error) throw error
+        if (error) {
+          console.error('Error inserting record:', error)
+          throw error
+        }
+        console.log('Successfully inserted record:', data)
       }
-    } catch (error) {
-      console.error('Error saving content:', error)
-      throw error
+    } catch (error: any) {
+      console.error('Error saving content field:', error)
+      const errorMessage = error?.message || error?.error?.message || 'Failed to save content'
+      throw new Error(errorMessage)
     }
   }
 
   const saveAllContent = async () => {
     try {
       setSaving(true)
+      console.log('saveAllContent called, preparing records...')
       
       // Prepare all records
       const records = []
@@ -392,50 +409,75 @@ export default function AdminPage() {
         }
       }
 
+      console.log(`Prepared ${records.length} records to save`)
+
       if (records.length === 0) {
         toast.info('No content to save')
         return
       }
 
       // Process each record individually to handle conflicts
-      const promises = records.map(async (record) => {
-        // Try to update first
-        const { data: existing, error: checkError } = await supabase
-          .from('section_content')
-          .select('id')
-          .eq('section', record.section)
-          .eq('field', record.field)
-          .maybeSingle()
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          throw checkError
-        }
-
-        if (existing) {
-          // Update existing
-          const { error } = await supabase
+      const results = await Promise.allSettled(
+        records.map(async (record) => {
+          console.log(`Processing record: ${record.section}.${record.field}`)
+          
+          // Try to update first
+          const { data: existing, error: checkError } = await supabase
             .from('section_content')
-            .update({ value: record.value })
+            .select('id')
             .eq('section', record.section)
             .eq('field', record.field)
-          
-          if (error) throw error
-        } else {
-          // Insert new
-          const { error } = await supabase
-            .from('section_content')
-            .insert(record)
-          
-          if (error) throw error
-        }
-      })
+            .maybeSingle()
 
-      await Promise.all(promises)
-      
-      toast.success('Content saved successfully!')
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.error(`Error checking ${record.section}.${record.field}:`, checkError)
+            throw checkError
+          }
+
+          if (existing) {
+            // Update existing
+            console.log(`Updating existing record: ${record.section}.${record.field}`)
+            const { error } = await supabase
+              .from('section_content')
+              .update({ value: record.value })
+              .eq('section', record.section)
+              .eq('field', record.field)
+            
+            if (error) {
+              console.error(`Error updating ${record.section}.${record.field}:`, error)
+              throw error
+            }
+            console.log(`Successfully updated: ${record.section}.${record.field}`)
+          } else {
+            // Insert new
+            console.log(`Inserting new record: ${record.section}.${record.field}`)
+            const { error } = await supabase
+              .from('section_content')
+              .insert(record)
+            
+            if (error) {
+              console.error(`Error inserting ${record.section}.${record.field}:`, error)
+              throw error
+            }
+            console.log(`Successfully inserted: ${record.section}.${record.field}`)
+          }
+        })
+      )
+
+      // Check for failures
+      const failures = results.filter(r => r.status === 'rejected')
+      if (failures.length > 0) {
+        console.error('Some records failed to save:', failures)
+        const errorMessages = failures.map(f => f.reason?.message || 'Unknown error').join(', ')
+        toast.error(`Failed to save ${failures.length} record(s): ${errorMessages}`)
+      } else {
+        console.log('All records saved successfully')
+        toast.success(`Successfully saved ${records.length} record(s)!`)
+      }
     } catch (error: any) {
       console.error('Error saving content:', error)
-      toast.error(error.message || 'Failed to save content')
+      const errorMessage = error?.message || error?.error?.message || 'Failed to save content'
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }

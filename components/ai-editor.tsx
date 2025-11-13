@@ -88,12 +88,17 @@ export function AIEditor({
     try {
       setSaving(true)
       
-      // Update local state
+      // Update local state first
       onUpdate(preview)
       
       // Save to database if save function and identifiers are provided
       if (onSave && section && field) {
+        console.log('Saving to database:', { section, field, value: preview })
         await onSave(section, field, preview)
+        console.log('Successfully saved to database')
+      } else {
+        console.warn('Save function not available:', { hasOnSave: !!onSave, section, field })
+        toast.warning('Content updated locally. Please use "Save All" to persist changes.')
       }
       
       setOpen(false)
@@ -102,9 +107,9 @@ export function AIEditor({
       toast.success('Content updated and saved to database!')
     } catch (error: any) {
       console.error('Error saving content:', error)
-      toast.error(error.message || 'Failed to save content to database')
+      const errorMessage = error?.message || error?.error?.message || 'Failed to save content to database'
+      toast.error(errorMessage)
       // Don't close the dialog if save failed, so user can try again
-    } finally {
       setSaving(false)
     }
   }
