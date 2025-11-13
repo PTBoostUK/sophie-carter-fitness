@@ -19,6 +19,8 @@ This guide will help you set up the ChatGPT AI content editing feature for your 
 
 ### 2. Add API Key to Environment Variables
 
+#### For Local Development:
+
 Create a `.env.local` file in the root of your project (if it doesn't exist) and add:
 
 ```env
@@ -29,6 +31,20 @@ OPENAI_API_KEY=your-api-key-here
 - Never commit `.env.local` to version control
 - The `.env.local` file is already in `.gitignore` by default
 - Replace `your-api-key-here` with your actual OpenAI API key
+
+#### For Netlify (Production):
+
+1. Go to your Netlify dashboard: https://app.netlify.com
+2. Select your site
+3. Go to **Site settings** → **Environment variables**
+4. Click **Add variable**
+5. Add:
+   - **Key**: `OPENAI_API_KEY`
+   - **Value**: Your OpenAI API key
+6. Click **Save**
+7. **Redeploy your site** (go to **Deploys** tab and click **Trigger deploy** → **Deploy site**)
+
+**Note:** The environment variable must be set in Netlify for the AI feature to work in production.
 
 ### 3. Restart Your Development Server
 
@@ -71,9 +87,16 @@ pnpm dev
 
 ### "OpenAI API key is not configured" Error
 
+**For Local Development:**
 - Make sure you've created `.env.local` file in the project root
 - Verify the variable name is exactly `OPENAI_API_KEY`
 - Restart your development server after adding the key
+- Check that the API key is valid and has credits
+
+**For Netlify (Production):**
+- Go to Netlify dashboard → Site settings → Environment variables
+- Verify `OPENAI_API_KEY` is set (it should NOT have the `NEXT_PUBLIC_` prefix)
+- After adding/updating the variable, trigger a new deploy
 - Check that the API key is valid and has credits
 
 ### "Failed to generate AI content" Error

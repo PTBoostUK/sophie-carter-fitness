@@ -63,9 +63,27 @@ Please provide an improved version of the content based on the user's instructio
     return NextResponse.json({ improvedText })
   } catch (error: any) {
     console.error('AI API error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to process AI request'
+    let statusCode = 500
+    
+    if (error.message?.includes('API key')) {
+      errorMessage = 'OpenAI API key is invalid or missing. Please check your environment variables.'
+      statusCode = 500
+    } else if (error.message?.includes('rate limit') || error.status === 429) {
+      errorMessage = 'OpenAI API rate limit exceeded. Please try again in a moment.'
+      statusCode = 429
+    } else if (error.message?.includes('insufficient_quota') || error.status === 402) {
+      errorMessage = 'OpenAI API quota exceeded. Please check your OpenAI account billing.'
+      statusCode = 402
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
     return NextResponse.json(
-      { error: error.message || 'Failed to process AI request' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     )
   }
 }
