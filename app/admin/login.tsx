@@ -89,19 +89,33 @@ export function Login({ onLoginSuccess }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-pink-50/30 to-purple-50/20 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-200/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-100/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+      </div>
+      
+      <Card className="w-full max-w-md bg-white/90 backdrop-blur-xl border-white/50 shadow-2xl shadow-pink-500/10 relative z-10 animate-fade-in-scale hover:shadow-3xl hover:shadow-pink-500/20 transition-all duration-500">
+        <CardHeader className="text-center space-y-4 pb-6">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-pink-500/20 to-rose-500/20 rounded-2xl flex items-center justify-center mb-2 relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/30 to-rose-500/30 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+            <Lock className="w-8 h-8 text-pink-600 relative z-10 group-hover:scale-110 transition-transform duration-300" />
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
-          <CardDescription>Enter your credentials to access the Dashboard</CardDescription>
+          <div>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+              Admin Login
+            </CardTitle>
+            <CardDescription className="text-slate-600">
+              Enter your credentials to access the Dashboard
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-semibold text-slate-700">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -110,10 +124,11 @@ export function Login({ onLoginSuccess }: LoginProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
                 required
+                className="focus:ring-2 focus:ring-pink-500/20 border-slate-200 hover:border-pink-200 hover:shadow-sm transition-all duration-300"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-semibold text-slate-700">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -122,6 +137,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 required
+                className="focus:ring-2 focus:ring-pink-500/20 border-slate-200 hover:border-pink-200 hover:shadow-sm transition-all duration-300"
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -130,22 +146,30 @@ export function Login({ onLoginSuccess }: LoginProps) {
                 checked={rememberEmail}
                 onCheckedChange={handleRememberEmailChange}
                 disabled={loading}
+                className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
               />
               <Label
                 htmlFor="remember-email"
-                className="text-sm font-normal cursor-pointer"
+                className="text-sm font-normal cursor-pointer text-slate-600 hover:text-slate-900 transition-colors duration-300"
               >
                 Remember email address
               </Label>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group" 
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                <span className="flex items-center justify-center">
+                  Sign In
+                  <Lock className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform duration-300" />
+                </span>
               )}
             </Button>
           </form>

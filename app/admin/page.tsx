@@ -203,10 +203,28 @@ export default function AdminPage() {
         grouped[item.section][item.field] = item.value
       })
 
-      setContent(grouped)
+      // Merge with default values so all fields are populated
+      const mergedContent: Record<string, Record<string, string>> = {}
+      for (const [section, defaults] of Object.entries(DEFAULT_VALUES)) {
+        if (section === 'theme') continue // Skip theme, it's handled separately
+        
+        mergedContent[section] = {
+          ...(defaults as Record<string, string>),
+          ...(grouped[section] || {}),
+        }
+      }
+
+      setContent(mergedContent)
     } catch (error) {
       console.error('Error loading content:', error)
       toast.error('Failed to load content')
+      // On error, still set defaults so fields are populated
+      const fallbackContent: Record<string, Record<string, string>> = {}
+      for (const [section, defaults] of Object.entries(DEFAULT_VALUES)) {
+        if (section === 'theme') continue
+        fallbackContent[section] = defaults as Record<string, string>
+      }
+      setContent(fallbackContent)
     } finally {
       setLoading(false)
     }
@@ -662,7 +680,7 @@ export default function AdminPage() {
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 opacity-20 animate-pulse"></div>
             <Loader2 className="w-8 h-8 animate-spin text-pink-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="text-slate-600 text-sm font-medium">Loading dashboard...</p>
+          <p className="text-slate-600 text-sm font-medium animate-pulse">Loading dashboard...</p>
         </div>
       </div>
     )
@@ -681,28 +699,34 @@ export default function AdminPage() {
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 opacity-20 animate-pulse"></div>
             <Loader2 className="w-8 h-8 animate-spin text-pink-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="text-slate-600 text-sm font-medium">Loading content...</p>
+          <p className="text-slate-600 text-sm font-medium animate-pulse">Loading content...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-pink-50/30 to-purple-50/20 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-pink-50/30 to-purple-50/20 p-6 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-200/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Modern Header */}
         <div className="mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg shadow-pink-500/5 p-6 mb-6">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-xl shadow-pink-500/10 p-8 mb-6 hover:shadow-2xl hover:shadow-pink-500/20 transition-all duration-500">
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+              <div className="space-y-2">
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 tracking-tight">
                   Admin Dashboard
                 </h1>
-                <p className="text-slate-600 text-sm">
+                <p className="text-slate-600 text-sm flex items-center gap-2">
                   Manage your website content and theme settings
                   {user && (
-                    <span className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50 text-xs font-medium text-slate-700 shadow-sm hover:shadow-md transition-all duration-300">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                       {user.email}
                     </span>
                   )}
@@ -710,24 +734,34 @@ export default function AdminPage() {
               </div>
               <div className="flex items-center gap-3 flex-wrap">
                 <Link href="/admin/inquiries" onClick={handleInquiriesClick}>
-                  <Button variant="outline" className="gap-2 relative hover:bg-pink-50 hover:border-pink-200 transition-all">
-                    <Mail className="w-4 h-4" />
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 relative hover:bg-pink-50 hover:border-pink-300 hover:scale-105 hover:shadow-lg transition-all duration-300 group"
+                  >
+                    <Mail className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                     View Inquiries
                     {inquiryCount > 0 && !hasVisitedInquiries && (
-                      <span className="absolute -top-2 -right-2 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-[10px] font-bold text-white px-1.5 shadow-lg shadow-pink-500/50 animate-pulse">
+                      <span className="absolute -top-2 -right-2 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-[10px] font-bold text-white px-1.5 shadow-lg shadow-pink-500/50 animate-bounce">
                         {inquiryCount > 99 ? '99+' : inquiryCount}
                       </span>
                     )}
                   </Button>
                 </Link>
                 <Link href="/">
-                  <Button variant="outline" className="gap-2 hover:bg-slate-50 transition-all">
-                    <ArrowLeft className="w-4 h-4" />
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 hover:bg-slate-50 hover:scale-105 hover:shadow-md transition-all duration-300 group"
+                  >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
                     Back to Website
                   </Button>
                 </Link>
-                <Button variant="outline" onClick={handleLogout} className="gap-2 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all">
-                  <LogOut className="w-4 h-4" />
+                <Button 
+                  variant="outline" 
+                  onClick={handleLogout} 
+                  className="gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600 hover:scale-105 hover:shadow-md transition-all duration-300 group"
+                >
+                  <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
                   Logout
                 </Button>
               </div>
@@ -737,21 +771,36 @@ export default function AdminPage() {
 
         <Tabs defaultValue="hero" className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-white/50 shadow-md p-1.5">
-              <TabsList className="grid w-full max-w-3xl grid-cols-5 bg-transparent gap-1">
-                <TabsTrigger value="hero" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-lg shadow-pink-500/5 p-2 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
+              <TabsList className="grid w-full max-w-3xl grid-cols-5 bg-transparent gap-2">
+                <TabsTrigger 
+                  value="hero" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 transition-all duration-300 hover:scale-105 hover:bg-pink-50"
+                >
                   Hero
                 </TabsTrigger>
-                <TabsTrigger value="about" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger 
+                  value="about" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 transition-all duration-300 hover:scale-105 hover:bg-pink-50"
+                >
                   About
                 </TabsTrigger>
-                <TabsTrigger value="services" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger 
+                  value="services" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 transition-all duration-300 hover:scale-105 hover:bg-pink-50"
+                >
                   Services
                 </TabsTrigger>
-                <TabsTrigger value="testimonials" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger 
+                  value="testimonials" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 transition-all duration-300 hover:scale-105 hover:bg-pink-50"
+                >
                   Testimonials
                 </TabsTrigger>
-                <TabsTrigger value="theme" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger 
+                  value="theme" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 transition-all duration-300 hover:scale-105 hover:bg-pink-50"
+                >
                   <Palette className="w-4 h-4 mr-2" />
                   Theme
                 </TabsTrigger>
@@ -760,7 +809,7 @@ export default function AdminPage() {
             <Button 
               onClick={saveAllContent} 
               disabled={saving} 
-              className="ml-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-all"
+              className="ml-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 group"
             >
               {saving ? (
                 <>
@@ -769,7 +818,7 @@ export default function AdminPage() {
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300" />
                   Save All
                 </>
               )}
@@ -777,23 +826,27 @@ export default function AdminPage() {
           </div>
 
           {/* Hero Section */}
-          <TabsContent value="hero" className="space-y-6 animate-in fade-in-50 duration-300">
-            <Card className="bg-white/90 backdrop-blur-sm border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-2xl font-bold text-slate-900">Hero Section</CardTitle>
-                <CardDescription className="text-slate-600 mt-1">Edit the main hero section content</CardDescription>
-                <CardAction>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => revertSectionToDefault('hero')}
-                    disabled={saving}
-                    className="hover:bg-slate-50 transition-all"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Revert to Default
-                  </Button>
-                </CardAction>
+          <TabsContent value="hero" className="space-y-6">
+            <Card className="bg-white/90 backdrop-blur-xl border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:scale-[1.01] group">
+              <CardHeader className="border-b border-slate-100/50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-slate-900 mb-1">Hero Section</CardTitle>
+                    <CardDescription className="text-slate-600">Edit the main hero section content</CardDescription>
+                  </div>
+                  <CardAction>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => revertSectionToDefault('hero')}
+                      disabled={saving}
+                      className="hover:bg-slate-50 hover:scale-105 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                      Revert to Default
+                    </Button>
+                  </CardAction>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
                 <div className="space-y-2">
@@ -814,7 +867,7 @@ export default function AdminPage() {
                     value={content.hero?.tagline || ''}
                     onChange={(e) => handleContentChange('hero', 'tagline', e.target.value)}
                     placeholder="Empowering Women Through Fitness"
-                    className="focus:ring-2 focus:ring-pink-500/20 border-slate-200 hover:border-slate-300 transition-all"
+                    className="focus:ring-2 focus:ring-pink-500/20 border-slate-200 hover:border-pink-200 hover:shadow-sm transition-all duration-300"
                   />
                 </div>
                 <div className="space-y-2">
@@ -884,23 +937,27 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* About Section */}
-          <TabsContent value="about" className="space-y-6 animate-in fade-in-50 duration-300">
-            <Card className="bg-white/90 backdrop-blur-sm border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-2xl font-bold text-slate-900">About Section</CardTitle>
-                <CardDescription className="text-slate-600 mt-1">Edit the about section content and image</CardDescription>
-                <CardAction>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => revertSectionToDefault('about')}
-                    disabled={saving}
-                    className="hover:bg-slate-50 transition-all"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Revert to Default
-                  </Button>
-                </CardAction>
+          <TabsContent value="about" className="space-y-6">
+            <Card className="bg-white/90 backdrop-blur-xl border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:scale-[1.01]">
+              <CardHeader className="border-b border-slate-100/50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-slate-900 mb-1">About Section</CardTitle>
+                    <CardDescription className="text-slate-600">Edit the about section content and image</CardDescription>
+                  </div>
+                  <CardAction>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => revertSectionToDefault('about')}
+                      disabled={saving}
+                      className="hover:bg-slate-50 hover:scale-105 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                      Revert to Default
+                    </Button>
+                  </CardAction>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -949,11 +1006,11 @@ export default function AdminPage() {
                   <Label className="text-sm font-semibold text-slate-700">About Image</Label>
                   <div className="flex items-center gap-4">
                     {getImageUrl('about', 'image') && (
-                      <div className="relative w-32 h-32 rounded-xl overflow-hidden border-2 border-slate-200 shadow-md hover:shadow-lg transition-all">
+                      <div className="relative w-32 h-32 rounded-xl overflow-hidden border-2 border-slate-200 shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 group">
                         <img
                           src={getImageUrl('about', 'image')}
                           alt="About"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                       </div>
                     )}
@@ -1024,23 +1081,27 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Services Section */}
-          <TabsContent value="services" className="space-y-6 animate-in fade-in-50 duration-300">
-            <Card className="bg-white/90 backdrop-blur-sm border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-2xl font-bold text-slate-900">Services Section</CardTitle>
-                <CardDescription className="text-slate-600 mt-1">Edit service cards content</CardDescription>
-                <CardAction>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => revertSectionToDefault('services')}
-                    disabled={saving}
-                    className="hover:bg-slate-50 transition-all"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Revert to Default
-                  </Button>
-                </CardAction>
+          <TabsContent value="services" className="space-y-6">
+            <Card className="bg-white/90 backdrop-blur-xl border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:scale-[1.01]">
+              <CardHeader className="border-b border-slate-100/50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-slate-900 mb-1">Services Section</CardTitle>
+                    <CardDescription className="text-slate-600">Edit service cards content</CardDescription>
+                  </div>
+                  <CardAction>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => revertSectionToDefault('services')}
+                      disabled={saving}
+                      className="hover:bg-slate-50 hover:scale-105 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                      Revert to Default
+                    </Button>
+                  </CardAction>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -1226,23 +1287,27 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Testimonials Section */}
-          <TabsContent value="testimonials" className="space-y-6 animate-in fade-in-50 duration-300">
-            <Card className="bg-white/90 backdrop-blur-sm border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-2xl font-bold text-slate-900">Testimonials Section</CardTitle>
-                <CardDescription className="text-slate-600 mt-1">Edit testimonials content</CardDescription>
-                <CardAction>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => revertSectionToDefault('testimonials')}
-                    disabled={saving}
-                    className="hover:bg-slate-50 transition-all"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Revert to Default
-                  </Button>
-                </CardAction>
+          <TabsContent value="testimonials" className="space-y-6">
+            <Card className="bg-white/90 backdrop-blur-xl border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:scale-[1.01]">
+              <CardHeader className="border-b border-slate-100/50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-slate-900 mb-1">Testimonials Section</CardTitle>
+                    <CardDescription className="text-slate-600">Edit testimonials content</CardDescription>
+                  </div>
+                  <CardAction>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => revertSectionToDefault('testimonials')}
+                      disabled={saving}
+                      className="hover:bg-slate-50 hover:scale-105 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                      Revert to Default
+                    </Button>
+                  </CardAction>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -1494,27 +1559,31 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Theme Section */}
-          <TabsContent value="theme" className="space-y-6 animate-in fade-in-50 duration-300">
-            <Card className="bg-white/90 backdrop-blur-sm border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-2xl font-bold text-slate-900">Theme Settings</CardTitle>
-                <CardDescription className="text-slate-600 mt-1">Customize your website's colors and fonts</CardDescription>
-                <CardAction>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={revertThemeToDefault}
-                    disabled={saving}
-                    className="hover:bg-slate-50 transition-all"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Revert to Default
-                  </Button>
-                </CardAction>
+          <TabsContent value="theme" className="space-y-6">
+            <Card className="bg-white/90 backdrop-blur-xl border-white/50 shadow-xl shadow-pink-500/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:scale-[1.01]">
+              <CardHeader className="border-b border-slate-100/50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-slate-900 mb-1">Theme Settings</CardTitle>
+                    <CardDescription className="text-slate-600">Customize your website's colors and fonts</CardDescription>
+                  </div>
+                  <CardAction>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={revertThemeToDefault}
+                      disabled={saving}
+                      className="hover:bg-slate-50 hover:scale-105 hover:shadow-md transition-all duration-300 group"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                      Revert to Default
+                    </Button>
+                  </CardAction>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-pink-50/50 to-rose-50/50 border border-pink-100">
+                  <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-pink-50/50 to-rose-50/50 border border-pink-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
                     <Label htmlFor="primary-color" className="text-sm font-semibold text-slate-700">Primary Color</Label>
                     <div className="flex items-center gap-3">
                       <Input
@@ -1534,7 +1603,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-purple-50/50 to-violet-50/50 border border-purple-100">
+                  <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-purple-50/50 to-violet-50/50 border border-purple-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
                     <Label htmlFor="secondary-color" className="text-sm font-semibold text-slate-700">Secondary Color</Label>
                     <div className="flex items-center gap-3">
                       <Input
@@ -1554,7 +1623,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-emerald-50/50 to-green-50/50 border border-emerald-100">
+                  <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-emerald-50/50 to-green-50/50 border border-emerald-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
                     <Label htmlFor="accent-color" className="text-sm font-semibold text-slate-700">Accent Color</Label>
                     <div className="flex items-center gap-3">
                       <Input
@@ -1575,7 +1644,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-slate-50/50 to-gray-50/50 border border-slate-100">
+                <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-slate-50/50 to-gray-50/50 border border-slate-100 hover:shadow-lg hover:scale-105 transition-all duration-300">
                   <Label htmlFor="font-family" className="text-sm font-semibold text-slate-700">Font Family</Label>
                   <select
                     id="font-family"
