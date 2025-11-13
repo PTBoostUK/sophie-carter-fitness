@@ -111,14 +111,74 @@ export default function InquiriesPage() {
   const deleteInquiry = async (inquiryId: string) => {
     try {
       setDeletingInquiryId(inquiryId)
-      const { error } = await supabase
+      
+      // Verify user is authenticated
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        throw new Error('You must be logged in to delete inquiries')
+      }
+
+      // First, verify the inquiry exists
+      const { data: existing, error: checkError } = await supabase
+        .from('customer_inquiries')
+        .select('id')
+        .eq('id', inquiryId)
+        .single()
+
+      if (checkError) {
+        throw new Error(`Inquiry not found: ${checkError.message}`)
+      }
+
+      console.log('Attempting to delete inquiry:', inquiryId)
+      
+      // Delete the inquiry with select to get confirmation
+      const { data, error } = await supabase
         .from('customer_inquiries')
         .delete()
         .eq('id', inquiryId)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase delete error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
+        
+        // Check for RLS policy errors
+        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy') || error.message?.includes('RLS')) {
+          throw new Error(
+            'Permission denied. The Row Level Security (RLS) policy may not be set up correctly.\n\n' +
+            'Please run this SQL in your Supabase SQL Editor:\n\n' +
+            'CREATE POLICY "Allow authenticated users to delete customer_inquiries" ON customer_inquiries\n' +
+            'FOR DELETE\n' +
+            'USING (auth.uid() IS NOT NULL);'
+          )
+        }
+        throw error
+      }
 
+      // Verify deletion was successful
+      if (!data || data.length === 0) {
+        // This might happen if RLS prevents seeing the deleted row, but deletion might still have worked
+        console.warn('Delete returned no data, but this might be due to RLS. Verifying deletion...')
+        
+        // Check if inquiry still exists
+        const { data: verifyData } = await supabase
+          .from('customer_inquiries')
+          .select('id')
+          .eq('id', inquiryId)
+          .single()
+        
+        if (verifyData) {
+          throw new Error('Inquiry still exists after delete operation. RLS policy may be blocking deletion.')
+        }
+      }
+
+      console.log('Inquiry deleted successfully:', data)
       toast.success('Inquiry deleted successfully')
+      
       // Remove from local state
       setInquiries(inquiries.filter((inq) => inq.id !== inquiryId))
       setExpandedInquiries(prev => {
@@ -126,9 +186,13 @@ export default function InquiriesPage() {
         next.delete(inquiryId)
         return next
       })
+      
+      // Reload inquiries to ensure sync
+      await loadInquiries()
     } catch (error: any) {
       console.error('Error deleting inquiry:', error)
-      toast.error(error.message || 'Failed to delete inquiry')
+      const errorMessage = error?.message || error?.error?.message || 'Failed to delete inquiry'
+      toast.error(errorMessage)
     } finally {
       setDeletingInquiryId(null)
     }
